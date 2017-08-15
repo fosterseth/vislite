@@ -248,6 +248,8 @@ class MainPlot():
         return cevent[1:, :]
 
     def draw_rects(self, data, bottom):
+        ind = data[:,0].argsort(axis=0)
+        data = data[ind,:]
         ax = self.ax
         values = data[:, 2].astype(int)
         prev_off = -1
