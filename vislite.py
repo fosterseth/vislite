@@ -445,7 +445,7 @@ class App(Tk.Tk):
         self.buttonPause = Tk.Button(master=self.rootTOP, text='Pause', command=self.pausevideos, bg = COLOR_BG_CREAM, borderwidth = 0)
         self.buttonClearPlot = Tk.Button(master=self.rootTOP, text='ClearPlot', command=self.clearplot, bg = COLOR_BG_CREAM, borderwidth = 0)
         self.buttonSavelayout = Tk.Button(master=self.rootTOP, text='SaveLayout', command=self.savelayout, bg = COLOR_BG_CREAM, borderwidth = 0)
-        self.buttonRaisewindows = Tk.Button(master=self.rootTOP, text='RaiseWindows', command=self.raisewindows, bg = COLOR_BG_CREAM, borderwidth = 0)
+        # self.buttonRaisewindows = Tk.Button(master=self.rootTOP, text='RaiseWindows', command=self.raisewindows, bg = COLOR_BG_CREAM, borderwidth = 0)
         self.buttonHelp = Tk.Button(master=self.rootTOP, text='Help', command=self.showhelp, bg = COLOR_BG_CREAM, borderwidth = 0)
 
         self.scrollbary = Tk.Scrollbar(master=self.rootMIDDLE2, orient=Tk.VERTICAL, bg = COLOR_BG, borderwidth = 0)
@@ -473,7 +473,7 @@ class App(Tk.Tk):
         self.buttonPause.pack(side=Tk.LEFT, pady=py, padx = px)
         self.buttonClearPlot.pack(side=Tk.LEFT, pady=py, padx = px)
         self.buttonSavelayout.pack(side=Tk.LEFT, pady=py, padx = px)
-        self.buttonRaisewindows.pack(side=Tk.LEFT, pady=py, padx = px)
+        # self.buttonRaisewindows.pack(side=Tk.LEFT, pady=py, padx = px)
         self.buttonQuit.pack(side=Tk.LEFT, pady=py, padx = px)
         self.buttonHelp.pack(side=Tk.LEFT, pady=py, padx = px)
 
@@ -544,8 +544,8 @@ class App(Tk.Tk):
             self.rootHELP.pack_forget()
             self.showhelp = True
 
-    def raisewindows(self):
-        self.queuein.put("raisewindows")
+    # def raisewindows(self):
+    #     self.queuein.put("raisewindows")
 
     def savelayout(self):
         layout = []
@@ -564,7 +564,7 @@ class App(Tk.Tk):
                 layout.append((x,y,w,h))
         if len(layout) > 0:
             # sort by x, then by y
-            layout = sorted(layout, key=lambda tup: tup[0], reverse=False)
+            # layout = sorted(layout, key=lambda tup: tup[0], reverse=False)
             # layout = sorted(layout, key=lambda tup: tup[1], reverse=False)
             # print(json.dumps(layout))
             fid = open("config/layout.txt", "w")
