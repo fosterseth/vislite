@@ -409,10 +409,11 @@ class App(Tk.Tk):
         self.queueout = queue.Queue()
         self.connect()
         self.subpaths = self.parse_subject_table()
-        self.cur_subject = ""
+        self.cur_subject = None
         self.showing_variables = False
         self.serverprocess = None
         self.showhelp = False
+        self.update_listbox_with_subjects("")
         # self.thread = netIO(self.queuein, self.queueout, self.sock)
         # self.thread.start()
 
@@ -423,7 +424,7 @@ class App(Tk.Tk):
         # self.loop() #check for memory leakage
 
     def initFrames(self):
-        self.wm_title("Show-me")
+        self.wm_title("vislite")
         self.rootTOP = Tk.Frame(master=self, bg=COLOR_BG)
         self.rootMIDDLE1 = Tk.Frame(master=self, bg=COLOR_BG)
         self.rootEntry = Tk.Frame(master=self, bg=COLOR_BG)
@@ -447,8 +448,8 @@ class App(Tk.Tk):
         self.buttonRaisewindows = Tk.Button(master=self.rootTOP, text='RaiseWindows', command=self.raisewindows, bg = COLOR_BG_CREAM, borderwidth = 0)
         self.buttonHelp = Tk.Button(master=self.rootTOP, text='Help', command=self.showhelp, bg = COLOR_BG_CREAM, borderwidth = 0)
 
-        self.scrollbary = Tk.Scale(master=self.rootMIDDLE2, orient=Tk.VERTICAL, from_=0, to=100, bg = COLOR_BG, fg = COLOR_TEXT, borderwidth = 0, showvalue=0)
-        self.scrollbarx = Tk.Scale(master=self.rootBOT, orient=Tk.HORIZONTAL, from_=0, to=50, bg = COLOR_BG, fg = COLOR_TEXT, borderwidth = 0, showvalue=0)
+        self.scrollbary = Tk.Scrollbar(master=self.rootMIDDLE2, orient=Tk.VERTICAL, bg = COLOR_BG, borderwidth = 0)
+        self.scrollbarx = Tk.Scrollbar(master=self.rootBOT, orient=Tk.HORIZONTAL, bg = COLOR_BG, borderwidth = 0)
         self.listbox = Tk.Listbox(master=self.rootMIDDLE2, bg = COLOR_BG_CREAM, borderwidth=0)
         self.listbox.bind('<Key>', self.listbox_callback)
 
@@ -479,12 +480,13 @@ class App(Tk.Tk):
         self.label_variable.pack(side=Tk.LEFT)
         self.entry.pack(side=Tk.LEFT, fill=Tk.X, expand = 1, pady=py, padx=(0,3))
 
-
         self.listbox.pack(side=Tk.LEFT, fill=Tk.BOTH, expand = 1, pady=py)
         self.scrollbary.pack(side=Tk.LEFT, fill=Tk.Y, pady=py)
         self.scrollbarx.pack(fill=Tk.X)
         self.scrollbary.config(command=self.listbox.yview)
         self.scrollbarx.config(command=self.listbox.xview)
+        self.listbox.config(yscrollcommand=self.scrollbary.set)
+        self.listbox.config(xscrollcommand=self.scrollbarx.set)
 
         self.label_subject.pack(side=Tk.LEFT, fill=Tk.X, pady=py)
         self.entry_subject.pack(side=Tk.LEFT, fill=Tk.X, expand=1, pady=py, padx=(0,3))
@@ -772,7 +774,6 @@ class App(Tk.Tk):
             self.listbox.insert(Tk.END, i)
 
         self.showing_variables = True
-        self.scrollbary.config(to=len(self.files))
 
     def update_listbox(self, text):
         if self.showing_variables is False:
@@ -782,7 +783,6 @@ class App(Tk.Tk):
         new_entries = self.search_files(text)
         for n in new_entries:
             self.listbox.insert(Tk.END, n)
-        self.scrollbary.config(to=len(new_entries))
 
     def construct_subpath_from_listbox(self, text):
         subpath = ""
@@ -831,7 +831,6 @@ class App(Tk.Tk):
         for n in new_entries:
             toadd = "    ".join(n)
             self.listbox.insert(Tk.END, toadd)
-        self.scrollbary.config(to=len(new_entries))
 
     def entry_subject_str_callback(self, *args):
         text = self.entry_subject_str.get()
@@ -882,7 +881,7 @@ class App(Tk.Tk):
         if not os.path.isdir(subpath):
             self.entry_subject_str.set("Invalid Subject")
             return
-        if self.cur_subject != "":
+        if self.cur_subject != None:
             self.clearplot()
         self.opensubject(subpath)
 
