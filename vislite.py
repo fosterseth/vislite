@@ -412,7 +412,7 @@ class App(Tk.Tk):
         self.cur_subject = None
         self.showing_variables = False
         self.serverprocess = None
-        self.showhelp = False
+        self.showhelp = True
         self.update_listbox_with_subjects("")
         # self.thread = netIO(self.queuein, self.queueout, self.sock)
         # self.thread.start()
@@ -437,7 +437,7 @@ class App(Tk.Tk):
         self.rootMIDDLE1.pack(fill=Tk.X)
         self.rootMIDDLE2.pack(fill=Tk.BOTH, expand=1)
         self.rootBOT.pack(fill=Tk.X)
-        self.rootHELP.pack(fill=Tk.BOTH)
+        # self.rootHELP.pack(fill=Tk.BOTH)
 
     def initWidgets(self):
         self.buttonQuit = Tk.Button(master=self.rootTOP, text='Quit', command=self.quitapp, bg = COLOR_BG_CREAM, borderwidth = 0)
