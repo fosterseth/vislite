@@ -35,9 +35,3 @@
 - .mat files must be saved as a matlab structure, with the data located in the structure, sdata.data
 - .csv files must be comma separated, no headers
 - Video files must be synchronized. They can have different frame rates however. Note that if they have different frame rates, navigating with <Right Arrow> will not be synchronized.
-
-
-
-Contact info:
-Seth Foster
-fosterbseth@gmail.com
