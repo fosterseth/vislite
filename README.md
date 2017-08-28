@@ -17,24 +17,24 @@
 
 # Additional notes
 - derived/ folder is the default working folder. You can specify a different working directory by typing another location into the “variable” entry field and pressing <Enter>.
-..* e.g. type “extra_p/” to view and select files from extra_p/ folder
+    - e.g. type “extra_p/” to view and select files from extra_p/ folder
 - You can load a subject that is not on multiwork by typing out the full path location into the subject field and press <Enter>.
-..* e.g. “c:/users/multisensory/desktop/subject0001/”
+    - e.g. “c:/users/multisensory/desktop/subject0001/”
 - You can save the current video layout by pressing <SaveLayout> button. This saves to config/layout.txt in the vislite.exe folder. Next time you load video files, it will place the videos into the saved positions. To go back to default layout, just delete config/layout.txt.
 - You can add or remove “favorites” files by editing config/favorites.txt.
 
 # Requirements
 - Subjects must have the following:
-..*  derived/ folder
-....*  cevent_trials.mat
-....* timing.mat with two required fields,
-......* trialInfo.camRate
-......* trialInfo.camTime
-....* extract_range.txt file in either supporting_files/ or extra_p/
-......* This file contains the offset between the beginning of the video file and 30sec mark in the .mat files.
-..* .mat files must be saved as a matlab structure, with the data located in the structure, sdata.data
-..* .csv files must be comma separated, no headers
-..* Video files must be synchronized. They can have different frame rates however. Note that if they have different frame rates, navigating with <Right Arrow> will not be synchronized.
+    - derived/ folder
+        - cevent_trials.mat
+        - timing.mat with two required fields,
+            - trialInfo.camRate
+            - trialInfo.camTime
+    - extract_range.txt file in either supporting_files/ or extra_p/
+        - This file contains the offset between the beginning of the video file and 30sec mark in the .mat files.
+- .mat files must be saved as a matlab structure, with the data located in the structure, sdata.data
+- .csv files must be comma separated, no headers
+- Video files must be synchronized. They can have different frame rates however. Note that if they have different frame rates, navigating with <Right Arrow> will not be synchronized.
 
 
 
