@@ -120,6 +120,7 @@ class Drag:
         x0_norm = x0/can_width
         x1_norm = x1/can_width
         self.mainplot.update_axes(x0_norm, x1_norm)
+        print(x0,x1,can_width)
 
     def rect_pressed(self, event):
         x0, y0, x1, y1 = self.canvas.coords(self.rectmain)
@@ -506,6 +507,7 @@ class App(Tk.Tk):
     def initPlot(self):
         self.destroycontainer()
         self.container = Tk.Toplevel(master=self.rootTOP, bg="white")
+        self.container.wm_title("streams")
         self.container.bind('<KeyRelease>', self.root_keypress)
 
         # self.container_frameL = Tk.Frame(master=self.container)
