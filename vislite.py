@@ -856,7 +856,7 @@ class App(Tk.Tk):
             windowname = filename[idx-5:idx]
         else:
             windowname = "MOVIE"
-        command = "open " + filename + " " + str(self.videopos) + " 500 0 0 windowname"
+        command = "open " + filename + " " + str(self.videopos) + " 500 0 0 " + windowname
         self.videopos += 50
         if self.layout is not None:
             idx = self.getnumvideos()
@@ -864,8 +864,9 @@ class App(Tk.Tk):
                 xywh = self.layout[idx]
                 xywh = [str(i) for i in xywh]
                 xywh = " ".join(xywh)
-                command = "open " + filename + " " + xywh
+                command = "open " + filename + " " + xywh + " " + windowname
                 self.videopos -= 50
+        print(command)
         self.queuein.put(command)
 
     # def get_root_dir(self, subpath):
