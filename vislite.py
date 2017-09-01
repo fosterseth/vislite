@@ -851,7 +851,12 @@ class App(Tk.Tk):
             self.update_listbox(text)
 
     def openvideo(self, filename):
-        command = "open " + filename + " " + str(self.videopos) + " 500 0 0"
+        idx = filename.find("_video_r/")
+        if idx > -1:
+            windowname = filename[idx-5:idx]
+        else:
+            windowname = "MOVIE"
+        command = "open " + filename + " " + str(self.videopos) + " 500 0 0 windowname"
         self.videopos += 50
         if self.layout is not None:
             idx = self.getnumvideos()

@@ -43,6 +43,9 @@ def load_matfile(filename):
     return scipy.io.loadmat(filename)['sdata'][0][0][1]
 
 
-fn = "C:/Users/sbf/Desktop/multiwork/experiment_70/included/__20140331_16579/derived/cevent_trials.csv"
-cevent = csv2np(fn)
-print(cevent)
+fn = "C:/Users/sbf/Desktop/multiwork/experiment_70/included/__20140331_16579/derived/cevent_eye_roi_child.mat"
+data = load_matfile(fn)
+for i in range(0,1000):
+    print(i)
+    ind = data[:,0].argsort(axis=0)
+    datay = data[ind,:]
