@@ -120,7 +120,6 @@ class Drag:
         x0_norm = x0/can_width
         x1_norm = x1/can_width
         self.mainplot.update_axes(x0_norm, x1_norm)
-        print(x0,x1,can_width)
 
     def rect_pressed(self, event):
         x0, y0, x1, y1 = self.canvas.coords(self.rectmain)
@@ -191,11 +190,11 @@ class MainPlot():
         self.ax.set_yticks([])
 
         # a tk.DrawingArea
-        canvas = FigureCanvasTkAgg(self.fig, master=parent)
-        canvas.get_tk_widget().config(highlightthickness=0)
-        canvas.show()
-        canvas.get_tk_widget().grid(row=1,column=0, sticky='NSEW')
-        canvas.mpl_connect('button_press_event', self.onclick)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
+        self.canvas.get_tk_widget().config(highlightthickness=0)
+        self.canvas.show()
+        self.canvas.get_tk_widget().grid(row=1,column=0, sticky='NSEW')
+        self.canvas.mpl_connect('button_press_event', self.onclick)
 
         canvas2 = FigureCanvasTkAgg(self.fig2, master=parent)
         canvas2.get_tk_widget().config(highlightthickness=0)
@@ -417,6 +416,7 @@ class App(Tk.Tk):
         self.serverprocess = None
         self.showhelp = True
         self.update_listbox_with_subjects("")
+        self.rect_playback = None
         # self.thread = netIO(self.queuein, self.queueout, self.sock)
         # self.thread.start()
 
@@ -518,12 +518,13 @@ class App(Tk.Tk):
         self.rectinner = self.canvas.create_rectangle(self.bar_x0x3[0]+10, 0, self.bar_x0x3[1]-10, 60, fill=COLOR_BG)
         # self.canvas.addtag_all("all")
 
-        self.canvas2 = Tk.Canvas(master=self.container, bg="cyan", height=10, highlightthickness=0)
+        self.canvas2 = Tk.Canvas(master=self.container, bg="white", height=20, highlightthickness=0)
         # self.canvas2.addtag_all("all")
-        self.rect_playback = self.canvas2.create_rectangle(50,0,60,10, fill="black")
+
         # self.canvas2.pack(fill=Tk.X, expand=1)
         self.canvas2.grid(row=0,column=0, sticky='EW')
         self.mainplot = MainPlot(self.container, self.selected_files, self.rootdir + "derived/cevent_trials.mat", self.rootdir + "derived/timing.mat", self.destroymainplot, self.mainplot_axes_fun, self.queuein, self.offset_frame, self.loaded_variables)
+
         self.dr = Drag(self.rectinner, self.rectouter, self.canvas, self.mainplot)
 
         self.canvas.grid(row=2,column=0, sticky='EW')
@@ -537,6 +538,9 @@ class App(Tk.Tk):
         self.container.update()
         aw = self.container.winfo_width()
         ah = self.container.winfo_height()
+        self.rect_playback = self.mainplot.canvas.get_tk_widget().create_line(50, 0, 50, ah, fill="black", width=2.0)
+        self.time_label = self.canvas2.create_text((50,0), text="0.0", anchor=Tk.NW)
+        self.cur_subject_info= self.canvas2.create_text((400,0), text=self.cur_subject_info, anchor=Tk.NW)
         self.container.geometry('%dx%d+400+0' % (aw, ah))
         self.dr.released(None)
 
@@ -648,13 +652,14 @@ class App(Tk.Tk):
         if self.showing_variables:
             if event.keysym == 'Return':
                 text = self.entry_str.get()
-                if os.path.exists(self.cur_subject + text):
-                    self.entry_str.set("")
-                    if text[-1] != "/":
-                        text = text + "/"
-                    self.working_dir = text
-                    self.update_filelist()
-                    self.insert_videos_and_favorites()
+                if len(text) > 0:
+                    if os.path.exists(self.cur_subject + text):
+                        self.entry_str.set("")
+                        if text[-1] != "/":
+                            text = text + "/"
+                        self.working_dir = text
+                        self.update_filelist()
+                        self.insert_videos_and_favorites()
 
 
     def root_keypress(self, event):
@@ -702,16 +707,19 @@ class App(Tk.Tk):
         self.mainplot_axes = (left, right)
 
     def rect_playback_pos(self):
-        if self.mainplot is not None:
-            secs = self.thread.videotime
-            secs = secs - self.mainplot.offset
+        if self.rect_playback is not None:
+            vsecs = self.thread.videotime
+            secs = vsecs - self.mainplot.offset
             x,y = self.mainplot_axes
             if (y > x):
                 secs_norm = (secs-x) / (y - x)
                 canvas2width = self.canvas2.winfo_width()
+                canvas2height = self.mainplot.canvas.get_tk_widget().winfo_height()
                 newx = secs_norm * canvas2width
                 # print(x, y, secs, self.canvas2width, newx)
-                self.canvas2.coords(self.rect_playback, newx, 0, newx+10, 10)
+                self.mainplot.canvas.get_tk_widget().coords(self.rect_playback, (newx, 0, newx, canvas2height))
+                self.canvas2.itemconfig(self.time_label, text="%.3f sec" % secs)
+                # self.canvas2.coords(self.time_label, (newx, 0))
         self.after(100, self.rect_playback_pos)
 
     def loop(self):
@@ -749,6 +757,7 @@ class App(Tk.Tk):
             self.container.destroy()
             self.container = None
             self.mainplot = None
+            self.rect_playback = None
 
     def search_files(self, text):
         keywords = text.split(" ")
@@ -789,10 +798,12 @@ class App(Tk.Tk):
             self.listbox.insert(Tk.END, n)
 
     def construct_subpath_from_listbox(self, text):
+        self.cur_subject_info = text
         subpath = ""
         if len(text) > 0:
             linesplit = text.split("    ")
             subpath = self.multidirroot + "experiment_" + linesplit[1] + "/included/" + "__" + linesplit[2] + "_" + linesplit[3] + "/"
+
         return subpath
 
     def listbox_callback(self, event):
@@ -843,9 +854,10 @@ class App(Tk.Tk):
 
     def entry_subject_callback(self, event):
         if event.keysym == 'Return':
-            text = self.listbox.get(0)
-            subpath = self.construct_subpath_from_listbox(text)
-            self.check_subject(subpath)
+            if self.showing_variables is False:
+                text = self.listbox.get(0)
+                subpath = self.construct_subpath_from_listbox(text)
+                self.check_subject(subpath)
 
     def entry_str_callback(self, *args):
         if self.showing_variables:
@@ -886,8 +898,8 @@ class App(Tk.Tk):
         if len(subpath) > 0:
             if subpath[-1] != '/':
                 subpath = subpath + '/'
-        if subpath == self.cur_subject:
-            return
+        # if subpath == self.cur_subject:
+        #     return
         if not os.path.isdir(subpath):
             self.entry_subject_str.set("Invalid Subject")
             return
