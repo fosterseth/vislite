@@ -48,22 +48,21 @@ colors = ["#0000FF",
 "#2C5554",
 "#47487B",
 "#139427"]
-#
-# class netIOtime(threading.Thread):
-#     def __init__(self, sock):
-#         self.sock = sock
-#         threading.Thread.__init__(self)
-#         self.do_stop = False
-#         self.videotime = 0.0
-#     def run(self):
-#         while True:
-#             if self.do_stop:
-#                 return
-#             if self.sock is not None:
-#                 self.sock.send("gettime".encode())
-#                 rec = self.sock.recv(20)
-#                 self.videotime = float(rec)
-#             time.sleep(.01)
+
+
+def find_multiwork_path():
+    drives = win32api.GetLogicalDriveStrings()
+    drives = drives.split('\000')[:-1]
+    multiwork = ""
+    for d in drives:
+        try:
+            info = win32api.GetVolumeInformation(d)
+            if info[0] == 'multiwork':
+                multiwork = d
+                break
+        except:
+            print("could not get info for this drive")
+    return multiwork
 
 class netIO(threading.Thread):
     def __init__(self, queuein, queueout, sock):
@@ -117,8 +116,8 @@ class Drag:
     def released(self, event):
         x0, y0, x1, y1 = self.canvas.coords(self.rectmain)
         can_width = self.canvas.winfo_width()
-        x0_norm = x0/can_width
-        x1_norm = x1/can_width
+        x0_norm = x0 / can_width
+        x1_norm = x1 / can_width
         self.mainplot.update_axes(x0_norm, x1_norm)
 
     def rect_pressed(self, event):
@@ -145,27 +144,37 @@ class Drag:
         resize, x0, x1, x2, x3, y0, y1, xpress, can_width = self.press
         dx = event.x - xpress
         newx2 = dx + x2
-        newx3 = dx + x3
-        if (newx2 > 0) & (newx3 < can_width):
-            self.canvas.coords(self.rectmain, (x0+dx, y0, x1+dx, y1))
-            self.canvas.coords(self.rectedge, (newx2, y0, newx3, y1))
+        newx3 = newx2 + x3 - x2  # newx2 might be negative before the rectedge is to the far left. If so, set newx2 to be 0
+        if newx2 < 0:
+            newx2 = 0
+            newx3 = newx2 + x3 - x2
+        elif newx3 > can_width:  # newx3 might be greater than canvas width before the rectedge is to the far right. If so, set newx3 to be can_width
+            newx3 = can_width
+            newx2 = newx3 - x3 + x2
+        self.canvas.coords(self.rectmain, (newx2 + 10, y0, newx3 - 10, y1))
+        self.canvas.coords(self.rectedge, (newx2, y0, newx3, y1))
 
     def rectedge_motion(self, event):
         if self.press is None:
             return
         resize, x0, x1, x2, x3, y0, y1, xpress, can_width = self.press
         dx = event.x - xpress
-        if resize == 1:
+        if resize == 1:  # left side
             newx2 = dx + x2
-            if ((x1-newx2) > 5) & (newx2 > 0):
-                self.canvas.coords(self.rectmain, (x0+dx, y0, x1, y1))
-                self.canvas.coords(self.rectedge, (newx2, y0, x3, y1))
-        elif resize == 2:
+            if newx2 < 0:
+                newx2 = 0
+            elif (x1 - newx2) < 15:
+                newx2 = x1 - 15
+            self.canvas.coords(self.rectmain, (newx2 + 10, y0, x1, y1))
+            self.canvas.coords(self.rectedge, (newx2, y0, x3, y1))
+        elif resize == 2:  # right side
             newx3 = dx + x3
-            if ((newx3 - x0) > 5) & (newx3 < can_width):
-                self.canvas.coords(self.rectmain, (x0, y0, x1+dx, y1))
-                self.canvas.coords(self.rectedge, (x2, y0, newx3, y1))
-
+            if newx3 > can_width:
+                newx3 = can_width
+            elif (newx3 - x0) < 15:
+                newx3 = x0 + 15
+            self.canvas.coords(self.rectmain, (x0, y0, newx3 - 10, y1))
+            self.canvas.coords(self.rectedge, (x2, y0, newx3, y1))
 
 class MainPlot():
     def __init__(self, parent, filenames, trials, timing, destroy_fun, mainplot_axes_fun, queuein, offset_frames, loaded_variables):
@@ -284,8 +293,10 @@ class MainPlot():
     def load_matfile(self, filename):
         if ".csv" in filename:
             data = self.csv2np(filename)
-        else:
+        elif ".mat" in filename:
             data = scipy.io.loadmat(filename)['sdata'][0][0][1]
+        else:
+            data = []
         return data
 
     def loaddata(self, filenames):
@@ -353,27 +364,28 @@ class MainPlot():
             self.loaded_variables.append((filename,data))
         # else:
         #     print("%s already loaded" % filename)
-        if "/event" in filename:
-            data = self.event2cevent(data)
-        if "/cont_" in filename:
-            self.draw_cont(data, top)
-        else:
-            data = self.cstream2cevent(data)
-            rects = self.draw_rects(data, top)
-        if bot < 0:
-            ax.set_ylim(bottom=0, top=10.5)
-            axname.set_ylim(bottom=0, top=10.5)
-            top = 10.5
-        else:
-            ax.set_ylim(top=top + 10.5)
-            axname.set_ylim(top=top + 10.5)
-            top = top + 10.5
+        if len(data) > 0:
+            if "/event" in filename:
+                data = self.event2cevent(data)
+            if "/cont_" in filename:
+                self.draw_cont(data, top)
+            else:
+                data = self.cstream2cevent(data)
+                rects = self.draw_rects(data, top)
+            if bot < 0:
+                ax.set_ylim(bottom=0, top=10.5)
+                axname.set_ylim(bottom=0, top=10.5)
+                top = 10.5
+            else:
+                ax.set_ylim(top=top + 10.5)
+                axname.set_ylim(top=top + 10.5)
+                top = top + 10.5
 
-        box = axname.add_patch(pat.Rectangle((0, top - 10.5), 1, 10, color=self.label_colors[self.numstreams % 2]))
-        filenamesplit = filename.split('/')
+            box = axname.add_patch(pat.Rectangle((0, top - 10.5), 1, 10, color=self.label_colors[self.numstreams % 2]))
+            filenamesplit = filename.split('/')
 
-        text = axname.text(0, top - 6.5, filenamesplit[-1])
-        self.boxes_and_labels.append((box,filename))
+            text = axname.text(0, top - 6.5, filenamesplit[-1])
+            self.boxes_and_labels.append((box,filename))
 
     def update_axes(self, xlim1, xlim2):
         width = self.xmax - self.xmin
@@ -388,7 +400,7 @@ class MainPlot():
 
 
 class App(Tk.Tk):
-    def __init__(self):
+    def __init__(self, multiwork_path):
         Tk.Tk.__init__(self)
         self.initFrames()
         self.initWidgets()
@@ -399,11 +411,11 @@ class App(Tk.Tk):
         self.mainplot = None
         self.loaded_variables = []
 
-        self.bar_x0x3 = (0,70)
+        self.bar_x0x3 = None
         self.videopos = 500
         self.mainplot_axes = (0,1)
         self.canvas2width = 0
-        self.multidirroot = self.find_multiwork_path()
+        self.multidirroot = multiwork_path
         if len(self.multidirroot) == 0:
             self.multidirroot = "c:/users/sbf/Desktop/multiwork/"
         self.working_dir = "derived/"
@@ -510,22 +522,12 @@ class App(Tk.Tk):
         self.container.wm_title("streams")
         self.container.bind('<KeyRelease>', self.root_keypress)
 
-        # self.container_frameL = Tk.Frame(master=self.container)
-        # self.container_frameR = Tk.Frame(master=self.container, bg="white")
-
         self.canvas = Tk.Canvas(master=self.container, bg=COLOR_BG_CREAM, height = 60, highlightthickness=0)
-        self.rectouter = self.canvas.create_rectangle(self.bar_x0x3[0], 0, self.bar_x0x3[1], 60, fill="black")
-        self.rectinner = self.canvas.create_rectangle(self.bar_x0x3[0]+10, 0, self.bar_x0x3[1]-10, 60, fill=COLOR_BG)
-        # self.canvas.addtag_all("all")
 
         self.canvas2 = Tk.Canvas(master=self.container, bg="white", height=20, highlightthickness=0)
-        # self.canvas2.addtag_all("all")
 
-        # self.canvas2.pack(fill=Tk.X, expand=1)
         self.canvas2.grid(row=0,column=0, sticky='EW')
         self.mainplot = MainPlot(self.container, self.selected_files, self.rootdir + "derived/cevent_trials.mat", self.rootdir + "derived/timing.mat", self.destroymainplot, self.mainplot_axes_fun, self.queuein, self.offset_frame, self.loaded_variables)
-
-        self.dr = Drag(self.rectinner, self.rectouter, self.canvas, self.mainplot)
 
         self.canvas.grid(row=2,column=0, sticky='EW')
 
@@ -540,8 +542,16 @@ class App(Tk.Tk):
         ah = self.container.winfo_height()
         self.rect_playback = self.mainplot.canvas.get_tk_widget().create_line(50, 0, 50, ah, fill="black", width=2.0)
         self.time_label = self.canvas2.create_text((50,0), text="0.0", anchor=Tk.NW)
-        self.cur_subject_info= self.canvas2.create_text((400,0), text=self.cur_subject_info, anchor=Tk.NW)
+        self.canvas2.create_text((400,0), text=self.cur_subject_info, anchor=Tk.NW)
         self.container.geometry('%dx%d+400+0' % (aw, ah))
+
+        if self.bar_x0x3 is None:
+            width = self.canvas.winfo_width()
+            self.bar_x0x3 = (0,width)
+
+        self.rectouter = self.canvas.create_rectangle(self.bar_x0x3[0], 0, self.bar_x0x3[1], 60, fill="black")
+        self.rectinner = self.canvas.create_rectangle(self.bar_x0x3[0] + 10, 0, self.bar_x0x3[1] - 10, 60, fill=COLOR_BG)
+        self.dr = Drag(self.rectinner, self.rectouter, self.canvas, self.mainplot)
         self.dr.released(None)
 
     def showhelp(self):
@@ -632,21 +642,10 @@ class App(Tk.Tk):
             line = fid.readline()
             offset = int(line[1:-2])
             fid.close()
+        else:
+            win_error = Tk.Toplevel(master = self)
+            Tk.Label(win_error, text="Warning: Did not find extract_range.txt. Second 30 in data will be aligned to frame 1 of videos", fg="red", bg="black").pack()
         return offset
-
-    def find_multiwork_path(self):
-        drives = win32api.GetLogicalDriveStrings()
-        drives = drives.split('\000')[:-1]
-        multiwork = ""
-        for d in drives:
-            try:
-                info = win32api.GetVolumeInformation(d)
-                if info[0] == 'multiwork':
-                    multiwork = d
-                    break
-            except:
-                print("could not get info for this drive")
-        return multiwork
 
     def entry_callback(self, event):
         if self.showing_variables:
@@ -814,6 +813,7 @@ class App(Tk.Tk):
                 if filename in self.videolist:
                     self.openvideo(self.rootdir + filename)
                 else:
+                    # if directory is extra_p/ and user clicks favorites, we need to set working_dir to derived/
                     if idx[0] < (len(self.videolist) + len(self.favorites) + 4):
                         working_dir = "derived/"
                     else:
@@ -824,9 +824,10 @@ class App(Tk.Tk):
                     else:
                         self.mainplot.loaddata([self.rootdir + working_dir + filename])
             else:
-                subpath_str = self.listbox.get(idx)
-                subpath = self.construct_subpath_from_listbox(subpath_str)
-                self.check_subject(subpath)
+                if len(idx) > 0:
+                    subpath_str = self.listbox.get(idx)
+                    subpath = self.construct_subpath_from_listbox(subpath_str)
+                    self.check_subject(subpath)
 
 
     def search_subjects(self, text):
@@ -905,10 +906,15 @@ class App(Tk.Tk):
             return
         if self.cur_subject != None:
             self.clearplot()
+        self.bar_x0x3 = None
         self.opensubject(subpath)
 
     def update_filelist(self):
-        self.files = os.listdir(self.rootdir+self.working_dir)
+        files = os.listdir(self.rootdir+self.working_dir)
+        self.files = []
+        for f in files:
+            if f.endswith(".csv") or f.endswith(".mat"):
+                self.files.append(f)
 
     def opensubject(self, subpath):
         # self.rootdir = "C:/users/sbf/Desktop/7001/"
@@ -920,6 +926,10 @@ class App(Tk.Tk):
             return
         self.offset_frame = self.get_offset_frame(subpath)
         self.update_filelist()
+        if "cevent_trials.mat" not in self.files or "timing.mat" not in self.files:
+            win_error = Tk.Toplevel()
+            Tk.Label(win_error, text="Error: subject must have cevent_trials.mat and timing.mat in the derived folder", fg="red", bg="black").pack()
+            return
         setfiles = set(self.files)
         self.filtered_favorites = list(setfiles.intersection(self.favorites))
 
@@ -962,7 +972,17 @@ class App(Tk.Tk):
 
 
 if __name__ == "__main__":
-
-    app = App()
-    app.geometry('400x600+0+0')
-    app.mainloop()
+    if os.path.isdir("c:/users/sbf/Desktop/multiwork/"):
+        multiwork_path = "c:/users/sbf/Desktop/multiwork/"
+    else:
+        multiwork_path = find_multiwork_path()
+    if len(multiwork_path) > 0:
+        app = App(multiwork_path)
+        app.geometry('400x600+0+0')
+        app.mainloop()
+    else:
+        error_root = Tk.Tk()
+        error_root.configure(bg="black")
+        Tk.Label(error_root, text = "Multiwork drive not connected", fg="red", bg="black").pack()
+        error_root.geometry('200x50+100+100')
+        error_root.mainloop()
