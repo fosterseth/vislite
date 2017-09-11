@@ -18,8 +18,6 @@
 # Additional notes
 - derived/ folder is the default working folder. You can specify a different working directory by typing another location into the “variable” entry field and pressing `<Enter>`.
     - e.g. type “extra_p/” to view and select files from extra_p/ folder
-- You can load a subject that is not on multiwork by typing out the full path location into the subject field and press `<Enter>`.
-    - e.g. “c:/users/multisensory/desktop/subject0001/”
 - You can save the current video layout by pressing `<SaveLayout>` button. This saves to config/layout.txt in the vislite.exe folder. Next time you load video files, it will place the videos into the saved positions. To go back to default layout, just delete config/layout.txt.
 - You can add or remove “favorites” files by editing config/favorites.txt.
 
